@@ -1,60 +1,65 @@
 import fetch from "node-fetch";
 import { ContractTag, ITagService } from "atq-types";
 
+// Define the subgraph URLs
 const SUBGRAPH_URLS: Record<string, { decentralized: string }> = {
-  // Ethereum Mainnet subgraph, by subgraphs.messari.eth (0x7e8f317a45d67e27e095436d2e0d47171e7c769f)
+  // Ethereum Mainnet subgraph
   "1": {
     decentralized:
       "https://gateway.thegraph.com/api/[api-key]/subgraphs/id/JCNWRypm7FYwV8fx5HhzZPSFaMxgkPuw4TnR3Gpi81zk",
   },
-  // Optimism subgraph, by subgraphs.messari.eth (0x7e8f317a45d67e27e095436d2e0d47171e7c769f)
+  // Optimism subgraph
   "10": {
     decentralized:
       "https://gateway.thegraph.com/api/[api-key]/subgraphs/id/3RWFxWNstn4nP3dXiDfKi9GgBoHx7xzc7APkXs1MLEgi",
   },
-  // BSC subgraph, by subgraphs.messari.eth (0x7e8f317a45d67e27e095436d2e0d47171e7c769f)
+  // BSC subgraph
   "56": {
     decentralized:
       "https://gateway.thegraph.com/api/[api-key]/subgraphs/id/43jbGkvSw55sMvYyF6MZieksmJbajMu3hNGF8PN9ucuP",
   },
-  // Gnosis subgraph, by subgraphs.messari.eth (0x7e8f317a45d67e27e095436d2e0d47171e7c769f)
+  // Gnosis subgraph
   "100": {
     decentralized:
       "https://gateway.thegraph.com/api/[api-key]/subgraphs/id/GiNMLDxT1Bdn2dQZxjQLmW24uwpc3geKUBW8RP6oEdg",
   },
-  // Fantom subgraph, by subgraphs.messari.eth (0x7e8f317a45d67e27e095436d2e0d47171e7c769f)
+  // Fantom subgraph
   "250": {
     decentralized:
       "https://gateway.thegraph.com/api/[api-key]/subgraphs/id/ZcLcVKJNQboeqACXhGuL3WFLBZzf5uUWheNsaFvLph6",
   },
-  // Base subgraph, by subgraphs.messari.eth (0x7e8f317a45d67e27e095436d2e0d47171e7c769f)
+  // Base subgraph
   "8453": {
     decentralized:
       "https://gateway.thegraph.com/api/[api-key]/subgraphs/id/D7mapexM5ZsQckLJai2FawTKXJ7CqYGKM8PErnS3cJi9",
   },
-  // Scroll subgraph, by subgraphs.messari.eth (0x7e8f317a45d67e27e095436d2e0d47171e7c769f), currently commented out since it is returning BSC result
+  // Scroll subgraph (currently commented out due to returning BSC results)
   //"534352": {
   //  decentralized:
   //    "https://gateway.thegraph.com/api/[api-key]/subgraphs/id/DkvXMxq1skgSe1ehLHWpiUthHU1znnMDK2SUmj9avhEX",
   //},
-  // Harmony subgraph, by subgraphs.messari.eth (0x7e8f317a45d67e27e095436d2e0d47171e7c769f)
+  // Harmony subgraph
   "1666600000": {
     decentralized:
       "https://gateway.thegraph.com/api/[api-key]/subgraphs/id/G1BNHqmteZiUwSEacfXG2nzMm13KLNo5xoxv62ErAyQv",
   },
 };
 
-// Define the OutputToken interface based on the new GraphQL query
-interface OutputToken {
+// Define the Token interface
+interface Token {
   id: string;
   name: string;
   symbol: string;
 }
 
+// Define the Market interface with optional token types
 interface Market {
-  outputToken: OutputToken;
+  outputToken?: Token;
+  _sToken?: Token;
+  _vToken?: Token;
 }
 
+// Define the GraphQL response structure
 interface GraphQLData {
   markets: Market[];
 }
@@ -70,10 +75,21 @@ const headers: Record<string, string> = {
   Accept: "application/json",
 };
 
+// Define the GraphQL query
 const GET_MARKETS_QUERY = `
 query MyQuery {
   markets {
     outputToken {
+      id
+      name
+      symbol
+    }
+    _sToken {
+      id
+      name
+      symbol
+    }
+    _vToken {
       id
       name
       symbol
@@ -110,7 +126,7 @@ function truncateString(text: string, maxLength: number) {
 // Function to fetch data from the GraphQL endpoint
 async function fetchData(
   subgraphUrl: string
-): Promise<OutputToken[]> {
+): Promise<Token[]> {
   const response = await fetch(subgraphUrl, {
     method: "POST",
     headers,
@@ -135,8 +151,15 @@ async function fetchData(
     throw new Error("No markets data found.");
   }
 
-  // Extract outputToken data from the markets
-  return result.data.markets.map(market => market.outputToken);
+  // Extract token data from the markets
+  const tokens: Token[] = [];
+  result.data.markets.forEach(market => {
+    if (market.outputToken) tokens.push(market.outputToken);
+    if (market._sToken) tokens.push(market._sToken);
+    if (market._vToken) tokens.push(market._vToken);
+  });
+
+  return tokens;
 }
 
 // Function to prepare the URL with the provided API key
@@ -153,8 +176,8 @@ function prepareUrl(chainId: string, apiKey: string): string {
 }
 
 // Function to transform token data into ContractTag objects
-function transformTokensToTags(chainId: string, tokens: OutputToken[]): ContractTag[] {
-  const validTokens: OutputToken[] = [];
+function transformTokensToTags(chainId: string, tokens: Token[]): ContractTag[] {
+  const validTokens: Token[] = [];
   const rejectedNames: string[] = [];
 
   tokens.forEach((token) => {
