@@ -197,10 +197,10 @@ function transformMarketsToTags(chainId: string, markets: Market[]): ContractTag
 
     return {
       "Contract Address": `eip155:${chainId}:${market.id}`,
-      "Public Name Tag": `${truncatedSymbolsText} Pool`,
+      "Public Name Tag": `${truncatedSymbolsText} Token`,
       "Project Name": "Aave v3",
       "UI/Website Link": "https://aave.com",
-      "Public Note": `Aave's official ${market.outputToken.name} pool contract`,
+      "Public Note": `Aave's official ${market.outputToken.name} token contract`,
     };
   });
 }
