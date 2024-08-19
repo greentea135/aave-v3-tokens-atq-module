@@ -1,7 +1,7 @@
 import fetch from "node-fetch";
 import { ContractTag, ITagService } from "atq-types";
 
-// Define the subgraph URLs
+// Define URLs for various subgraphs, replace `[api-key]` with your actual API key.
 const SUBGRAPH_URLS: Record<string, { decentralized: string }> = {
   // Ethereum Mainnet subgraph, by subgraphs.messari.eth (0x7e8f317a45d67e27e095436d2e0d47171e7c769f)
   "1": {
@@ -45,40 +45,38 @@ const SUBGRAPH_URLS: Record<string, { decentralized: string }> = {
   },
 };
 
-// Define the Token interface
-interface Token {
+// Define the interfaces according to the new GraphQL query.
+interface MarketToken {
   id: string;
   name: string;
   symbol: string;
 }
 
-// Define the Market interface with optional token types
 interface Market {
-  outputToken?: Token;
-  _sToken?: Token;
-  _vToken?: Token;
+  outputToken: MarketToken;
+  _sToken: MarketToken;
+  _vToken: MarketToken;
+  createdTimestamp: number;
 }
 
-// Define the GraphQL response structure
 interface GraphQLData {
   markets: Market[];
 }
 
 interface GraphQLResponse {
   data?: GraphQLData;
-  errors?: { message: string }[]; // Assuming the API might return errors in this format
+  errors?: { message: string }[]; // Handle GraphQL errors
 }
 
-// Define headers for the query
-const headers: Record<string, string> = {
-  "Content-Type": "application/json",
-  Accept: "application/json",
-};
-
-// Define the GraphQL query
+// Define the GraphQL query for fetching markets with a timestamp filter.
 const GET_MARKETS_QUERY = `
-query MyQuery {
-  markets {
+query GetMarkets($lastTimestamp: Int) {
+  markets(
+    first: 1000,
+    orderBy: createdTimestamp,
+    orderDirection: asc,
+    where: { createdTimestamp_gt: $lastTimestamp }
+  ) {
     outputToken {
       id
       name
@@ -94,11 +92,18 @@ query MyQuery {
       name
       symbol
     }
+    createdTimestamp
   }
 }
 `;
 
-// Type guard for errors
+// Define headers for the GraphQL query request.
+const headers: Record<string, string> = {
+  "Content-Type": "application/json",
+  Accept: "application/json",
+};
+
+// Function to check if an error is an instance of Error.
 function isError(e: unknown): e is Error {
   return (
     typeof e === "object" &&
@@ -108,30 +113,32 @@ function isError(e: unknown): e is Error {
   );
 }
 
-// Function to check for invalid values
+// Function to check if a string contains invalid values such as HTML or is empty.
 function containsInvalidValue(text: string): boolean {
   const containsHtml = /<[^>]*>/.test(text);
   const isEmpty = text.trim() === "";
   return isEmpty || containsHtml;
 }
 
-// Function to truncate strings
+// Function to truncate a string to a specified maximum length.
 function truncateString(text: string, maxLength: number) {
   if (text.length > maxLength) {
-    return text.substring(0, maxLength - 3) + "..."; // Subtract 3 for the ellipsis
+    return text.substring(0, maxLength - 3) + "..."; // Subtract 3 for ellipsis
   }
   return text;
 }
 
-// Function to fetch data from the GraphQL endpoint
+// Fetch data from the subgraph and handle potential errors.
 async function fetchData(
-  subgraphUrl: string
-): Promise<Token[]> {
+  subgraphUrl: string,
+  lastTimestamp: number
+): Promise<Market[]> {
   const response = await fetch(subgraphUrl, {
     method: "POST",
     headers,
     body: JSON.stringify({
       query: GET_MARKETS_QUERY,
+      variables: { lastTimestamp },
     }),
   });
 
@@ -151,18 +158,10 @@ async function fetchData(
     throw new Error("No markets data found.");
   }
 
-  // Extract token data from the markets
-  const tokens: Token[] = [];
-  result.data.markets.forEach(market => {
-    if (market.outputToken) tokens.push(market.outputToken);
-    if (market._sToken) tokens.push(market._sToken);
-    if (market._vToken) tokens.push(market._vToken);
-  });
-
-  return tokens;
+  return result.data.markets;
 }
 
-// Function to prepare the URL with the provided API key
+// Prepare the URL by replacing `[api-key]` with the actual API key.
 function prepareUrl(chainId: string, apiKey: string): string {
   const urls = SUBGRAPH_URLS[chainId];
   if (!urls || isNaN(Number(chainId))) {
@@ -175,53 +174,59 @@ function prepareUrl(chainId: string, apiKey: string): string {
   return urls.decentralized.replace("[api-key]", encodeURIComponent(apiKey));
 }
 
-// Function to transform token data into ContractTag objects
-function transformTokensToTags(chainId: string, tokens: Token[]): ContractTag[] {
-  const validTokens: Token[] = [];
+// Transform market data into the format expected by ContractTag.
+function transformMarketsToTags(chainId: string, markets: Market[]): ContractTag[] {
+  const validMarkets: Market[] = [];
   const rejectedNames: string[] = [];
 
-  tokens.forEach((token) => {
-    const nameInvalid = containsInvalidValue(token.name);
-    const symbolInvalid = containsInvalidValue(token.symbol);
+  markets.forEach((market) => {
+    const token0Invalid = containsInvalidValue(market.outputToken.name) || containsInvalidValue(market.outputToken.symbol);
+    const token1Invalid = containsInvalidValue(market._sToken.name) || containsInvalidValue(market._sToken.symbol);
+    const token2Invalid = containsInvalidValue(market._vToken.name) || containsInvalidValue(market._vToken.symbol);
 
-    if (nameInvalid || symbolInvalid) {
-      // Reject tokens where the name or symbol is empty or contains invalid content
-      if (nameInvalid) {
-        rejectedNames.push(`Token: ${token.id} rejected due to invalid name - Name: ${token.name}`);
+    if (token0Invalid || token1Invalid || token2Invalid) {
+      // Reject markets with invalid token data.
+      if (token0Invalid) {
+        rejectedNames.push(`Market: ${market.outputToken.id} rejected due to invalid token data - OutputToken: ${market.outputToken.name}, Symbol: ${market.outputToken.symbol}`);
       }
-      if (symbolInvalid) {
-        rejectedNames.push(`Token: ${token.id} rejected due to invalid symbol - Symbol: ${token.symbol}`);
+      if (token1Invalid) {
+        rejectedNames.push(`Market: ${market._sToken.id} rejected due to invalid token data - SToken: ${market._sToken.name}, Symbol: ${market._sToken.symbol}`);
+      }
+      if (token2Invalid) {
+        rejectedNames.push(`Market: ${market._vToken.id} rejected due to invalid token data - VToken: ${market._vToken.name}, Symbol: ${market._vToken.symbol}`);
       }
     } else {
-      validTokens.push(token);
+      validMarkets.push(market);
     }
   });
 
   if (rejectedNames.length > 0) {
-    console.log("Rejected tokens:", rejectedNames);
+    console.log("Rejected markets:", rejectedNames);
   }
 
-  return validTokens.map((token) => {
+  return validMarkets.map((market) => {
     const maxSymbolsLength = 45;
-    const truncatedSymbolsText = truncateString(token.symbol, maxSymbolsLength);
+    const symbolsText = `${market.outputToken.symbol}/${market._sToken.symbol}/${market._vToken.symbol}`;
+    const truncatedSymbolsText = truncateString(symbolsText, maxSymbolsLength);
 
     return {
-      "Contract Address": `eip155:${chainId}:${token.id}`,
-      "Public Name Tag": `${truncatedSymbolsText} Token`,
-      "Project Name": "Aave V3",
+      "Contract Address": `eip155:${chainId}:${market.outputToken.id}`,
+      "Public Name Tag": `${truncatedSymbolsText} Market`,
+      "Project Name": "Aave v3",
       "UI/Website Link": "https://aave.com",
-      "Public Note": `Aave V3's official ${token.name} token contract.`,
+      "Public Note": `The liquidity market contract on Aave v3 for the ${market.outputToken.name} (${market.outputToken.symbol}), ${market._sToken.name} (${market._sToken.symbol}), and ${market._vToken.name} (${market._vToken.symbol}) tokens.`,
     };
   });
 }
 
-// The main logic for this module
+// Main logic for the TagService module.
 class TagService implements ITagService {
   // Using an arrow function for returnTags
   returnTags = async (
     chainId: string,
     apiKey: string
   ): Promise<ContractTag[]> => {
+    let lastTimestamp: number = 0;
     let allTags: ContractTag[] = [];
     let isMore = true;
 
@@ -229,18 +234,23 @@ class TagService implements ITagService {
 
     while (isMore) {
       try {
-        const tokens = await fetchData(url);
-        allTags.push(...transformTokensToTags(chainId, tokens));
+        const markets = await fetchData(url, lastTimestamp);
+        allTags.push(...transformMarketsToTags(chainId, markets));
 
-        // Determine if there's more data to fetch
-        isMore = tokens.length === 100; // Adjust the condition based on your data pagination
+        isMore = markets.length === 1000; // Check if there might be more data
+        if (isMore) {
+          lastTimestamp = parseInt(
+            markets[markets.length - 1].createdTimestamp.toString(),
+            10
+          );
+        }
       } catch (error) {
         if (isError(error)) {
           console.error(`An error occurred: ${error.message}`);
-          throw new Error(`Failed fetching data: ${error}`); // Propagate a new error with more context
+          throw new Error(`Failed fetching data: ${error}`); // Propagate error with context
         } else {
           console.error("An unknown error occurred.");
-          throw new Error("An unknown error occurred during fetch operation."); // Throw with a generic error message if the error type is unknown
+          throw new Error("An unknown error occurred during fetch operation."); // Generic error handling
         }
       }
     }
@@ -248,9 +258,9 @@ class TagService implements ITagService {
   };
 }
 
-// Creating an instance of TagService
+// Create an instance of TagService.
 const tagService = new TagService();
 
-// Exporting the returnTags method directly
+// Export the returnTags method directly.
 export const returnTags = tagService.returnTags;
 
