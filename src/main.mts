@@ -3,42 +3,42 @@ import { ContractTag, ITagService } from "atq-types";
 
 // Define the subgraph URLs
 const SUBGRAPH_URLS: Record<string, { decentralized: string }> = {
-  // Ethereum Mainnet subgraph
+  // Ethereum Mainnet subgraph, by subgraphs.messari.eth (0x7e8f317a45d67e27e095436d2e0d47171e7c769f)
   "1": {
     decentralized:
       "https://gateway.thegraph.com/api/[api-key]/subgraphs/id/JCNWRypm7FYwV8fx5HhzZPSFaMxgkPuw4TnR3Gpi81zk",
   },
-  // Optimism subgraph
+  // Optimism subgraph, by subgraphs.messari.eth (0x7e8f317a45d67e27e095436d2e0d47171e7c769f)
   "10": {
     decentralized:
       "https://gateway.thegraph.com/api/[api-key]/subgraphs/id/3RWFxWNstn4nP3dXiDfKi9GgBoHx7xzc7APkXs1MLEgi",
   },
-  // BSC subgraph
+  // BSC subgraph, by subgraphs.messari.eth (0x7e8f317a45d67e27e095436d2e0d47171e7c769f)
   "56": {
     decentralized:
       "https://gateway.thegraph.com/api/[api-key]/subgraphs/id/43jbGkvSw55sMvYyF6MZieksmJbajMu3hNGF8PN9ucuP",
   },
-  // Gnosis subgraph
+  // Gnosis subgraph, by subgraphs.messari.eth (0x7e8f317a45d67e27e095436d2e0d47171e7c769f)
   "100": {
     decentralized:
       "https://gateway.thegraph.com/api/[api-key]/subgraphs/id/GiNMLDxT1Bdn2dQZxjQLmW24uwpc3geKUBW8RP6oEdg",
   },
-  // Fantom subgraph
+  // Fantom subgraph, by subgraphs.messari.eth (0x7e8f317a45d67e27e095436d2e0d47171e7c769f)
   "250": {
     decentralized:
       "https://gateway.thegraph.com/api/[api-key]/subgraphs/id/ZcLcVKJNQboeqACXhGuL3WFLBZzf5uUWheNsaFvLph6",
   },
-  // Base subgraph
+  // Base subgraph, by subgraphs.messari.eth (0x7e8f317a45d67e27e095436d2e0d47171e7c769f)
   "8453": {
     decentralized:
       "https://gateway.thegraph.com/api/[api-key]/subgraphs/id/D7mapexM5ZsQckLJai2FawTKXJ7CqYGKM8PErnS3cJi9",
   },
-  // Scroll subgraph (currently commented out due to returning BSC results)
+  // Scroll subgraph (currently commented out due to returning BSC results), by subgraphs.messari.eth (0x7e8f317a45d67e27e095436d2e0d47171e7c769f)
   //"534352": {
   //  decentralized:
   //    "https://gateway.thegraph.com/api/[api-key]/subgraphs/id/DkvXMxq1skgSe1ehLHWpiUthHU1znnMDK2SUmj9avhEX",
   //},
-  // Harmony subgraph
+  // Harmony subgraph, by subgraphs.messari.eth (0x7e8f317a45d67e27e095436d2e0d47171e7c769f)
   "1666600000": {
     decentralized:
       "https://gateway.thegraph.com/api/[api-key]/subgraphs/id/G1BNHqmteZiUwSEacfXG2nzMm13KLNo5xoxv62ErAyQv",
