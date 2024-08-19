@@ -13,7 +13,7 @@ To set up the submodule for development, follow these steps:
 
 1. Clone the repository:
    ```
-   git clone https://github.com/greentea135/stargate-v1-pools-atq-module
+   git clone https://github.com/greentea135/aave-v3-tokens-atq-module
    ```
 2. Navigate into the repository directory:
 
