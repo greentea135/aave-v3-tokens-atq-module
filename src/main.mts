@@ -33,6 +33,11 @@ const SUBGRAPH_URLS: Record<string, { decentralized: string }> = {
     decentralized:
       "https://gateway.thegraph.com/api/[api-key]/subgraphs/id/D7mapexM5ZsQckLJai2FawTKXJ7CqYGKM8PErnS3cJi9",
   },
+  // Arbitrum subgraph, by subgraphs.messari.eth (0x7e8f317a45d67e27e095436d2e0d47171e7c769f)
+  "42161": {
+    decentralized:
+      "https://gateway.thegraph.com/api/[api-key]/subgraphs/id/4xyasjQeREe7PxnF6wVdobZvCw5mhoHZq3T7guRpuNPf",
+  },
   // Scroll subgraph (currently commented out due to returning BSC results), by subgraphs.messari.eth (0x7e8f317a45d67e27e095436d2e0d47171e7c769f)
   //"534352": {
   //  decentralized:
