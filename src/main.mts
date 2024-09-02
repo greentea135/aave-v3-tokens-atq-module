@@ -38,6 +38,11 @@ const SUBGRAPH_URLS: Record<string, { decentralized: string }> = {
     decentralized:
       "https://gateway.thegraph.com/api/[api-key]/subgraphs/id/4xyasjQeREe7PxnF6wVdobZvCw5mhoHZq3T7guRpuNPf",
   },
+  // Avalanche subgraph, by subgraphs.messari.eth (0x7e8f317a45d67e27e095436d2e0d47171e7c769f)
+  "43114": {
+    decentralized:
+      "https://gateway.thegraph.com/api/[api-key]/subgraphs/id/72Cez54APnySAn6h8MswzYkwaL9KjvuuKnKArnPJ8yxb",
+  },
   // Scroll subgraph (currently commented out due to returning BSC results), by subgraphs.messari.eth (0x7e8f317a45d67e27e095436d2e0d47171e7c769f)
   //"534352": {
   //  decentralized:
