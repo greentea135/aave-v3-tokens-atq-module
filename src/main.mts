@@ -216,7 +216,7 @@ function transformMarketsToTags(chainId: string, markets: Market[]): ContractTag
   }
 
   return validTokens.map((token) => {
-    const maxSymbolsLength = 45;
+    const maxSymbolsLength = 44;
     const truncatedSymbolsText = truncateString(token.symbol, maxSymbolsLength);
 
     return {
